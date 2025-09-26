@@ -1,14 +1,18 @@
 import os, sys, json
 import requests
+from dotenv import load_dotenv
 
 def pretty(obj):
     return json.dumps(obj, ensure_ascii=False, indent=2)
 
 BASE = "http://api.weatherapi.com/v1"
 
+# .env 파일 로드
+load_dotenv()
+
 print("[STEP] 키 포함하여 날씨 조회")
 
-key = os.environ.get("WEATHERAPI_KEY")
+key = os.getenv("WEATHERAPI_KEY")
 if not key:
     print("환경변수 WEATHERAPI_KEY가 설정되어 있지 않습니다.")
     print("Mac/Linux 예) export WEATHERAPI_KEY=\"발급받은키\"")
@@ -22,7 +26,6 @@ cities = ["Seoul", "Paris", "London"]
 
 
 try:
-
     for city in cities:
         params = {"key": key, "q": city, "days": 3, "aqi": "no", "alerts": "no"}
         response = requests.get(url=url, params=params, timeout=2)
