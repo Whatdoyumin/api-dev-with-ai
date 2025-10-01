@@ -19,6 +19,7 @@ def create_memo(memo: Memo):
     MEMOS[m_id] = memo
     return {"id": m_id}
 
+# a. 제목 일부가 같을 경우 출력
 @app.get("/memos")
 def read_memos(
     q: Optional[str] = Query(default=None, description="제목 부분 검색 키워드"),
@@ -74,3 +75,43 @@ def read_memo(m_id: str):
     if m_id not in MEMOS:
         raise HTTPException(404, detail="Memo not found")
     return MEMOS[m_id]
+
+# 수정
+## put으로 update
+@app.put("/memo/{m_id}")
+def update_memo(m_id: str, memo: Memo):
+    if m_id not in MEMOS:
+        raise HTTPException(status_code=404, detail="메모 없음")
+    MEMOS[m_id] = memo
+    return {"id": m_id, **memo.model_dump()}
+
+## patch로 update
+class MemoPatch(BaseModel):
+    title: Optional[str] = Field(default=None,min_length=1, max_length=100)
+    content: Optional[str] = Field(default=None ,min_length=1, max_length=1000)
+
+@app.patch("/memo/{m_id}")
+def update_memo_patch(m_id: str, memo: MemoPatch):
+    if m_id not in MEMOS:
+        raise HTTPException(status_code=404, detail="메모 없음")
+    
+    original_memo = MEMOS[m_id]
+
+    if memo.title is None and memo.content is None:
+        raise HTTPException(status_code=400, detail="입력된 값 없음")
+    
+    if memo.title is not None:
+        original_memo.title = memo.title
+    if memo.content is not None:
+        original_memo.content = memo.content
+    
+    return {"id": m_id, **original_memo.model_dump()}
+
+
+# 삭제
+@app.delete("/memo/{m_id}")
+def delete_memo(m_id: str):
+    if m_id not in MEMOS:
+        raise HTTPException(status_code=404, detail="메모 없음")
+    del MEMOS[m_id]
+    return {"message": f'Memo {m_id} deleted.'}
