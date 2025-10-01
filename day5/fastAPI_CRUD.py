@@ -48,6 +48,25 @@ def read_memos(
     }
     return data
 
+# b. 제목 완전일치 검색하여 한 건의 결과를 반환
+#    제목이 완전히 같은 메모가 두 개 이상 나올 경우, 부분 검색을 이용해 달라고 안내메시지 출력
+@app.get("/memo/bytitle/{title}")
+def read_memo_by_title(title: str):
+    matched = [(m_id, m) for m_id, m in MEMOS.items() if m.title == title]
+
+    if not matched:
+        raise HTTPException(404, detail="검색 결과가 없습니다.")
+    
+    if len(matched) > 1:
+        raise HTTPException(409, detail="여러 건이 검색되었습니다. 부분 검색을 이용하세요.")
+    
+    m_id, m = matched[0]
+
+    data = {
+        "id": m_id,
+        **m.model_dump()
+    }
+    return data
 
 
 @app.get("/memo/{m_id}")
