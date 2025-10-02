@@ -1,0 +1,11 @@
+EmployeeId,Department,Role,Salary,JoinDate
+E001,Sales,Manager,72000,2022-03-01
+E002,Sales,Staff,42000,2023-07-15
+E003,HR,Staff,46000,2021-11-20
+E004,IT,Engineer,80000,2020-01-10
+E005,IT,Engineer,83000,2019-08-22
+E006,HR,Manager,70000,2018-04-03
+E007,Marketing,Staff,39000,2024-02-12
+E008,Sales,Engineer,61000,2022-11-05
+E009,IT,Staff,54000,2023-03-19
+E010,Marketing,Manager,75000,2020-06-30
