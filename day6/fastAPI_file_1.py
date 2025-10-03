@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException, Query, status
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, EmailStr, Field
 from uuid import uuid4
-from typing import Dict, Optional, List
+from typing import Dict, Optional, List, Union
 
 app = FastAPI(title="CRUD")
 
@@ -50,3 +50,32 @@ def read_memos(
 
     return {"total": total, "limit": limit, "offset": offset, "items": page}
 
+class LoginIn(BaseModel):
+    email: EmailStr
+    password: str = Field(min_length=4)
+
+class LoginSuccess(BaseModel):
+    status: str = Field(default="ok")
+    user_email: EmailStr
+    token: str
+
+class LoginError(BaseModel):
+    status: str = Field(default="error")
+    error_code: str
+    message: str
+
+# 성공 또는 실패 모델 둘 다 명시
+LoginResponse = Union[LoginSuccess, LoginError]
+ACCOUNTS = {"demo@example.com": "pass1234"}
+
+@app.post("/login", response_model=LoginResponse, tags=["auth"])
+def login(payload: LoginIn):
+    pwd = ACCOUNTS.get(payload.email)
+    if not pwd:
+        return LoginError(error_code="USER_NOT_FOUND", message="등록되지 않은 이메일입니다.")
+    if payload.password != pwd:
+        return LoginError(error_code="WRONG_PASSWORD", message="비밀번호가 올바르지 않습니다.")
+    
+    # 성공 케이스
+    fake_token = f"token-{uuid4().hex[:12]}"
+    return LoginSuccess(user_email=payload.email, token=fake_token)
