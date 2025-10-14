@@ -7,10 +7,15 @@ from schemas.translate import TranslateRequest, TranslateResponse
 from adapters.registry import registry
 from schemas.infer import InferRequest, InferResponse
 
+from services.infer_service import InferService
+
 app = FastAPI(title="AI 텍스트 API 서비스", version="2.0.0")
 logger = get_logger("translate")
 
 translator = TranslateModel()
+
+# infer 서비스 객체 생성
+infer_service = InferService(registry, max_cocurrency=6)
 
 @app.post("/translate", response_model=TranslateResponse, summary="한영 번역")
 def translate(req: TranslateRequest):
@@ -40,30 +45,21 @@ def list_model():
     }
     
 @app.post("/v1/infer", response_model=InferResponse, summary="텍스트 생성/분류 등 추론")
-def infer(req: InferRequest):
-    try:
-        adapter = registry.get(req.model)
-    except:
-        raise HTTPException(404, detail=f"모델을 찾을 수 없습니다: {req.model}")
-    
+async def infer(req: InferRequest):
     if any((not t) or (not t.strip()) for t in req.inputs):
         raise HTTPException(400, detail="입력 텍스트는 비어있을 수 없습니다.")
     
     try:
-        outputs = adapter.predict(inputs=req.inputs, params=req.params or {})
-    except Exception as e:
-        import traceback
-        print("----- 추론 중 오류 발생 -----")
-        traceback.print_exc()
-        print("---------------------------")
-
-        raise HTTPException(
-            500,
-            detail=f"추론 중 오류: {type(e).__name__} - {e}"
-        )
+        outputs = await infer_service.infer(model=req.model, texts=req.inputs, params=req.params or {})
+        return {
+            "model": req.model,
+            "output": outputs
+        }
+        
+    except KeyError:
+        raise HTTPException(404, detail=f"모델 없음: {req.model}")
     
-    return {
-        "model": req.model,
-        "output": outputs
-    }
+    except Exception as e:
+        raise HTTPException(500, detail=f"추론 실패: {e}")
+    
         
