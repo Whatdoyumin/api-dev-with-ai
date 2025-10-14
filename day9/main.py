@@ -62,4 +62,24 @@ async def infer(req: InferRequest):
     except Exception as e:
         raise HTTPException(500, detail=f"추론 실패: {e}")
     
+
         
+from fastapi import Body
+
+@app.post("/v1/infer_detail")
+async def infer_detail(
+    model: str = Body(..., embed=True),
+    inputs: list[str] = Body(..., embed=True),
+    params: dict | None = Body(None, embed=True)
+):
+    
+    if any((not t) or (not t.strip()) for t in inputs):
+        raise HTTPException(400, detail="입력 텍스트 오류 발생")
+    
+    try:
+        result = await infer_service.infer_with_detail(model, inputs, params)
+        return result
+    except KeyError:
+        raise HTTPException(404, detail=f'모델 없음: {model}')
+    except Exception as e:
+        raise HTTPException(500, detail=f'추론 실패: {e}')
