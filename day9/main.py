@@ -1,4 +1,7 @@
 import time
+
+START_TIME = time.time()
+
 from fastapi import FastAPI, HTTPException
 from utils.logger import get_logger
 from models.translate_model import TranslateModel
@@ -17,6 +20,43 @@ translator = TranslateModel()
 # infer 서비스 객체 생성
 infer_service = InferService(registry, max_cocurrency=6)
 
+# 캐시 및 상태 모니터링 엔드포인트
+@app.get("/health", summary="헬스 체크")
+def health_check():
+    return {
+        "status": "OK",
+        "uptime_s": round(time.time() - START_TIME, 2)
+    }
+
+@app.get("/metrics", summary="메트릭 정보")
+def metrics():
+    cache_store = infer_service.cache._store
+    cache_items = len(cache_store)
+    uptime = round(time.time() - START_TIME, 2)
+    
+    sample_keys = list(cache_store.keys())[:3]
+    sample_preview = [str(k) for k in sample_keys]
+    
+    return {
+        "status": "running",
+        "uptime_s": uptime,
+        "cache_items": cache_items,
+        "cache_sample_keys": sample_preview,
+        "max_concurrency": infer_service.schema._value
+    }
+    
+@app.delete("/clear_cache", summary="캐시 초기화")
+def clear_cache():
+    """인메모리 캐시 초기화"""
+    infer_service.cache._store.clear()
+    cleared = len(infer_service.cache._store)
+    infer_service.cache._store.clear()
+    return {
+        "status": "cleared",
+        "cache_items": cleared
+    }
+
+# 추론 엔드포인트
 @app.post("/translate", response_model=TranslateResponse, summary="한영 번역")
 def translate(req: TranslateRequest):
     text = req.text.strip()
